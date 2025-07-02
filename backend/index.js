@@ -478,7 +478,7 @@ OracleDB.createPool(dbConfig, (err, pool) => {
               secure: false,
               auth: {
                 user: "vefitrpa@manappuram.com", // Your email
-                pass: "WSXasd@1234", // Your email password
+                pass: "tdfgbgthwcvbdfbs", // Your email password
               },
             });
 
@@ -606,8 +606,53 @@ OracleDB.createPool(dbConfig, (err, pool) => {
 
   //fetche file api
   
-  app.get('/api/get-files-by-meeting-id/:meetingId', async (req, res) => {
-    const meetingId = req.params.meetingId;
+//   app.get('/api/get-files-by-meeting-id/:meetingId', async (req, res) => {
+//     const meetingId = req.params.meetingId;
+//   let connection;
+
+//   try {
+//     connection = await pool.getConnection();
+
+//     const query = `
+//     SELECT FILE_ID, FILE_NAME, FILE_TYPE, FILE_DATA 
+//     FROM MEETING_FILES 
+//     WHERE MEETINGID = :meetingId
+//     `;
+//     const result = await connection.execute(query, { meetingId }, {
+//       outFormat: OracleDB.OUT_FORMAT_OBJECT,
+//       fetchInfo: {
+//         "FILE_DATA": { type: OracleDB.BUFFER }
+//       }
+//     });
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ message: 'No files found for this meeting ID.' });
+//     }
+//     const baseUrl = 'https://vef.manappuram.com'; 
+//     const files = result.rows.map(file => ({
+//       fileId: file.FILE_ID,
+//       fileName: file.FILE_NAME,
+//       fileType: file.FILE_TYPE,
+//       fileUrl: `/api/file/${file.FILE_ID}`  // A separate URL for the file download/preview
+//     }));
+
+//     res.json(files);  // Return file metadata as JSON
+//   } catch (error) {
+//     console.error('Error fetching files:', error);
+//     res.status(500).send('Error fetching files');
+//   } finally {
+//     if (connection) {
+//       try {
+//         await connection.close();
+//       } catch (error) {
+//         console.error('Error closing connection', error);
+//       }
+//     }
+//   }
+// });
+
+app.get('/api/get-files-by-meeting-id/:meetingId', async (req, res) => {
+  const meetingId = req.params.meetingId;
   let connection;
 
   try {
@@ -626,20 +671,22 @@ OracleDB.createPool(dbConfig, (err, pool) => {
     });
 
     if (result.rows.length === 0) {
+      console.warn(`No files found for meeting ID: ${meetingId}`);
       return res.status(404).json({ message: 'No files found for this meeting ID.' });
     }
+
     const baseUrl = 'https://vef.manappuram.com'; 
     const files = result.rows.map(file => ({
       fileId: file.FILE_ID,
       fileName: file.FILE_NAME,
       fileType: file.FILE_TYPE,
-      fileUrl: `/api/file/${file.FILE_ID}`  // A separate URL for the file download/preview
+      fileUrl: `/api/file/${file.FILE_ID}`
     }));
 
-    res.json(files);  // Return file metadata as JSON
+    res.json(files);
   } catch (error) {
     console.error('Error fetching files:', error);
-    res.status(500).send('Error fetching files');
+    res.status(500).json({ message: 'Error fetching files' });
   } finally {
     if (connection) {
       try {
@@ -731,7 +778,7 @@ app.get('/api/file/:fileId', async (req, res) => {
     secure: false, // Adjust based on your SMTP server configuration
     auth: {
       user: "vefitrpa@manappuram.com", // Replace with your email address
-      pass: "WSXasd@1234", // Replace with your email password
+      pass: "tdfgbgthwcvbdfbs", // Replace with your email password
     },
   });
   // API endpoint to handle meeting details and send email
@@ -965,8 +1012,11 @@ GROUP BY "VERTICALNAME","EMPCODE"
 });
 
   // Endpoint to fetch delay data
-app.get('/api/delays', async (req, res) => {
+  
+app.get("/api/delays/", async (req, res) => {
   let connection;
+  // const EmpCode = req.params.empCode;
+  console.log("Received EmpCode",EmpCode)
   try {
     connection = await pool.getConnection();
     const query = (`
@@ -978,6 +1028,7 @@ app.get('/api/delays', async (req, res) => {
         ROUND(MAX(SYSDATE - TO_DATE("TARGETDATE"))) AS DELAY_DAYS
       FROM MEETING_MASTER
       WHERE "TARGETDATE" IS NOT NULL
+      // AND "EMPCODE" =:EmpCode
         AND "USER_REMARK" = 'in-progress'
       GROUP BY "DEPTHOD", "DEPARTMENT"
     `);
